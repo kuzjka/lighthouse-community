@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Lighthouse</string>
+    <string name="will_show_notifications">Застосунок буде приймати сповіщення</string>
+    <string name="will_not_show_notifications">Застосунок не буде приймати сповіщення</string>
+    <string name="notifications_needed">Будь ласка, надайте дозвіл для отримання сповіщень у застосунку щоб невідкладно отримувати оновлення інформації</string>
+    <string name="default_notification_channel_id">ua.org.meters.lighthouse.mobile</string>
+    <string name="fcm_message">Lighthouse</string>
 </resources>
