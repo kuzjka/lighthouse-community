@@ -27,7 +27,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import com.google.android.gms.tasks.OnCompleteListener
+import com.google.firebase.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.messaging
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import ua.org.meters.lighthouse.mobile.ui.theme.LighthouseTheme
@@ -60,6 +62,7 @@ class MainActivity : ComponentActivity() {
         }
         askNotificationPermission()
         logRegistrationToken()
+        subscribeToTopic("power")
     }
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -95,6 +98,14 @@ class MainActivity : ComponentActivity() {
 
             Log.i(TAG, "Got FCM token: " + task.result)
         })
+    }
+
+    private fun subscribeToTopic(topic: String) {
+        Firebase.messaging.subscribeToTopic(topic)
+            .addOnCompleteListener {  task ->
+                val message = if (task.isSuccessful) "Subscribed to '${topic}' successfully" else "Cannot subscribe to topic"
+                Log.d(TAG, message)
+            }
     }
 
     companion object {
