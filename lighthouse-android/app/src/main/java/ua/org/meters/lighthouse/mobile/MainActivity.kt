@@ -10,28 +10,50 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import ua.org.meters.lighthouse.mobile.ui.theme.LighthouseTheme
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val intentPower = intent.getBooleanExtra("power", false)
+        val powerStatus: Flow<Boolean> = this.dataStore.data.map {
+            preferences -> preferences[POWER_KEY] ?: intentPower
+        }
+
+
         enableEdgeToEdge()
         setContent {
             LighthouseTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                            name = "Android",
-                            modifier = Modifier.padding(innerPadding)
+                Scaffold(
+                    modifier = Modifier.fillMaxSize()
+                ) { innerPadding ->
+                    val powerState = powerStatus.collectAsState(initial = intentPower)
+                    AppScreen(
+                        powerOn = powerState.value,
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxSize()
                     )
                 }
             }
@@ -81,17 +103,50 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-            text = "Hello $name!",
-            modifier = modifier
-    )
+fun AppScreen(
+    powerOn: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val imageRes = if (powerOn) R.drawable.lighthouse_on else R.drawable.lighthouse_off
+    val stringRes = if (powerOn) R.string.power_on else R.string.power_off
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = stringResource(R.string.screen_title),
+            style = MaterialTheme.typography.headlineMedium
+        )
+        Image(
+            painter = painterResource(imageRes),
+            contentDescription = stringResource(stringRes)
+        )
+        Text(
+            text = stringResource(stringRes)
+        )
+    }
 }
 
-@Preview(showBackground = true)
+@Preview(
+    showBackground = true,
+    name = "App screen - power on"
+)
 @Composable
-fun GreetingPreview() {
+fun AppScreenPreview() {
     LighthouseTheme {
-        Greeting("Android")
+        AppScreen(powerOn = true)
+    }
+}
+
+@Preview(
+    showBackground = true,
+    name = "App screen - power off"
+)
+@Composable
+fun AppScreenPowerOffPreview() {
+    LighthouseTheme {
+        AppScreen(powerOn = false)
     }
 }

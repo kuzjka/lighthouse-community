@@ -11,8 +11,10 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.datastore.preferences.core.edit
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import kotlinx.coroutines.runBlocking
 
 /**
  * Receives messages from Firebase Cloud.
@@ -27,6 +29,12 @@ class LighthouseFCMService : FirebaseMessagingService() {
         if (message.notification != null) {
             sendNotification(message);
         }
+
+        if (message.data.containsKey("power")) {
+            runBlocking {
+                saveLastState(message.data["power"].toBoolean())
+            }
+        }
     }
 
     /**
@@ -37,6 +45,11 @@ class LighthouseFCMService : FirebaseMessagingService() {
         val requestCode = 0
         val intent = Intent(this, MainActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
+        if (message.data.containsKey("power")) {
+            intent.putExtra("power", message.data["power"].toBoolean())
+        }
+
         val pendingIntent = PendingIntent.getActivity(
             this,
             requestCode,
@@ -48,7 +61,7 @@ class LighthouseFCMService : FirebaseMessagingService() {
         val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setContentTitle(getString(R.string.fcm_message))
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.lighthouse)
             .setContentText(message.notification?.body)
             .setAutoCancel(true)
             .setSound(defaultSoundUri)
@@ -68,6 +81,16 @@ class LighthouseFCMService : FirebaseMessagingService() {
 
         val notificationId = 0
         notificationManager.notify(notificationId, notificationBuilder.build())
+    }
+
+    private fun sendIntentToApp(powerOn: Boolean) {
+        val intent = Intent(this, MainActivity::class.java)
+        intent.putExtra("power", powerOn)
+        sendBroadcast(intent)
+    }
+
+    suspend private fun saveLastState(powerOn: Boolean) {
+        baseContext.dataStore.edit { preferences -> preferences[POWER_KEY] = powerOn }
     }
 
     companion object {
