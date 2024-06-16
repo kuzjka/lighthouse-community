@@ -15,11 +15,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -43,6 +52,7 @@ class MainActivity : ComponentActivity() {
             preferences -> preferences[POWER_KEY] ?: intentPower
         }
 
+        val showPermissionRequest = askNotificationPermission()
 
         enableEdgeToEdge()
         setContent {
@@ -53,6 +63,10 @@ class MainActivity : ComponentActivity() {
                     val powerState = powerStatus.collectAsState(initial = intentPower)
                     AppScreen(
                         powerOn = powerState.value,
+                        showPermissionRequest = showPermissionRequest,
+                        onPermissionRequestJustification = {
+                            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        },
                         modifier = Modifier
                             .padding(innerPadding)
                             .fillMaxSize()
@@ -60,7 +74,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        askNotificationPermission()
+
         logRegistrationToken()
         subscribeToTopic("power")
     }
@@ -75,18 +89,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun askNotificationPermission() {
+    private fun askNotificationPermission(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
                 PackageManager.PERMISSION_GRANTED
             ) {
                 Log.d(TAG, "Notification permission already granted")
             } else if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
-                Toast.makeText(baseContext, R.string.notifications_needed, Toast.LENGTH_SHORT).show()
+                return true
             } else {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
+        return false
     }
 
     private fun logRegistrationToken() {
@@ -116,10 +131,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppScreen(
     powerOn: Boolean,
+    showPermissionRequest: Boolean = false,
+    onPermissionRequestJustification: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val imageRes = if (powerOn) R.drawable.lighthouse_on else R.drawable.lighthouse_off
     val stringRes = if (powerOn) R.string.power_on else R.string.power_off
+    var showPermissionRequest by remember { mutableStateOf(showPermissionRequest) }
 
     Column(
         modifier = modifier,
@@ -138,6 +156,54 @@ fun AppScreen(
             text = stringResource(stringRes)
         )
     }
+    
+    if (showPermissionRequest) {
+        RequestPermissionDialog(
+            onClose = { confirm -> 
+                if (confirm) onPermissionRequestJustification()
+                showPermissionRequest = false
+            }
+        )
+    }
+}
+
+@Composable
+fun RequestPermissionDialog(
+    onClose: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AlertDialog(
+        icon = {
+            Icon(
+                imageVector = Icons.Filled.Info,
+                contentDescription = "Info"
+            )
+        },
+        title = {
+            Text(stringResource(id = R.string.notifications_needed_title))
+        },
+        text = {
+            Text(stringResource(id = R.string.notifications_needed))
+        },
+        onDismissRequest = {
+            onClose(false)
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onClose(true) }
+            ) {
+                Text(stringResource(id = R.string.dialog_request))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = { onClose(false) }
+            ) {
+                Text(stringResource(id = R.string.dialog_cancel))
+            }
+        },
+        modifier = modifier
+    )
 }
 
 @Preview(
@@ -159,5 +225,16 @@ fun AppScreenPreview() {
 fun AppScreenPowerOffPreview() {
     LighthouseTheme {
         AppScreen(powerOn = false)
+    }
+}
+
+@Preview(
+    showBackground = true,
+    name = "Request permission dialog"
+)
+@Composable
+fun RequestPermissionDialogPreview() {
+    LighthouseTheme {
+        RequestPermissionDialog(onClose = {})
     }
 }
