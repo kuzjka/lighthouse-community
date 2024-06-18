@@ -1,35 +1,39 @@
 package ua.org.meters.lighthouse.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
+import java.time.Instant;
 
 @Service
 public class SensorService {
     private boolean sensorState;
-    private Calendar lastReport = Calendar.getInstance();
+    private Instant lastReport;
 
-    @Autowired
-    PowerEventPublisher eventPublisher;
+    private PowerEventPublisher eventPublisher;
+
+    public SensorService(PowerEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+        this.sensorState = true;
+        this.lastReport = Instant.now();
+    }
 
     @Scheduled(fixedDelay = 30000)
     public void checkSensor() {
         System.out.println("checkSensorState()");
-        if (Calendar.getInstance().getTimeInMillis() - lastReport.getTimeInMillis() > 60000) {
+        if ((Instant.now().getEpochSecond() - lastReport.getEpochSecond()) >= 60 && this.sensorState) {
             this.sensorState = false;
-        } else {
-            this.sensorState = true;
+            this.eventPublisher.publishPowerEvent(false);
         }
-        System.out.println("power on: " + this.sensorState);
     }
 
     @Scheduled(fixedDelay = 120000)
     public void onSensorReport() {
         System.out.println("onSensorReport()");
-        this.sensorState = true;
-        this.lastReport = Calendar.getInstance();
-        this.eventPublisher.publishPowerEvent(this.sensorState);
+        if (!this.sensorState) {
+            this.lastReport = Instant.now();
+            this.sensorState = true;
+            this.eventPublisher.publishPowerEvent(true);
+        }
     }
 }
