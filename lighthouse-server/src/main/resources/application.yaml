@@ -3,6 +3,8 @@ lighthouse:
     checkRate: 30  # time in seconds between sensor state checks
     timeout: 60    # time in seconds to pass without reports before the sensor is considered unpowered
     password: changeme
+  fcm:
+    creds-file: firebase-credentials.json
 
 logging:
   level:
