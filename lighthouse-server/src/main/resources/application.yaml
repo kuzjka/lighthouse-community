@@ -5,6 +5,9 @@ lighthouse:
     password: changeme
   fcm:
     creds-file: firebase-credentials.json
+  telegram:
+    token: 1234567890:secrettoken
+    chat-id: -1002158828917
 
 logging:
   level:
