@@ -1,0 +1,9 @@
+logging:
+  level:
+    ua.org.meters.lighthouse: INFO
+
+server:
+  port: 8443
+  ssl:
+    certificate: ssl.crt
+    certificate-private-key: ssl.key
