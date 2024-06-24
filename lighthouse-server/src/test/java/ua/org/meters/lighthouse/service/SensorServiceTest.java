@@ -68,4 +68,26 @@ public class SensorServiceTest {
         /* should not emit power on event */
         verifyNoInteractions(eventPublisher);
     }
+
+    @Test
+    public void testPowerOnSequentialReports() {
+        /* this test resembles issue #26 */
+        when(clock.instant()).thenReturn(Instant.parse("2024-06-24T22:10:00Z"));
+        SensorService service = new SensorService(eventPublisher, 60, clock, true);
+
+        /* T +25 seconds */
+        when(clock.instant()).thenReturn(Instant.parse("2024-06-24T22:10:25Z"));
+        service.onSensorReport();
+
+        /* T +30 seconds */
+        when(clock.instant()).thenReturn(Instant.parse("2024-06-24T22:10:30Z"));
+        service.checkSensor();
+        verifyNoInteractions(eventPublisher);
+
+        /* T +65 seconds */
+        when(clock.instant()).thenReturn(Instant.parse("2024-06-24T22:11:05Z"));
+        service.checkSensor();
+        /* last sensor report was 40 seconds ago, should not emit power off */
+        verifyNoInteractions(eventPublisher);
+    }
 }
