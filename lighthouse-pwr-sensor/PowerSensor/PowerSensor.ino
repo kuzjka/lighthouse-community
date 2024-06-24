@@ -4,10 +4,12 @@
 #include <ESP8266WiFiMulti.h>
 
 #include <ESP8266HTTPClient.h>
+#include <WiFiClientSecureBearSSL.h>
 
 #include <WiFiClient.h>
 
 #include "settings.h"
+#include "cert.h"
 
 ESP8266WiFiMulti WiFiMulti;
 
@@ -34,13 +36,16 @@ void loop() {
   // wait for WiFi connection
   if ((WiFiMulti.run() == WL_CONNECTED)) {
 
-    WiFiClient client;
+    std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
+    client->setFingerprint(fingerprint);
+
     HTTPClient http;
 
     String url = String(SERVER_URL);
     url.concat("/api/sensor/report");
 
-    if (http.begin(client, url)) {
+    if (http.begin(*client, url)) {
+      http.setAuthorization(USERNAME, PASSWORD);
 
       Serial.print("Sending request to the server... ");
       int httpCode = http.POST("");
