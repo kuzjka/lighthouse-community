@@ -71,8 +71,8 @@ public class SensorService {
      */
     public void onSensorReport() {
         logger.debug("onSensorReport()");
+        this.lastReport = Instant.now(clock);
         if (!this.sensorState) {
-            this.lastReport = Instant.now(clock);
             this.sensorState = true;
             this.eventPublisher.publishPowerEvent(true);
         }
