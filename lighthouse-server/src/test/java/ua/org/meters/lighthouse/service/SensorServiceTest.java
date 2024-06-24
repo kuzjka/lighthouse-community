@@ -20,7 +20,7 @@ public class SensorServiceTest {
     }
 
     @Test
-    public void testPowerOff() {
+    public void testPowerOffTrue() {
         when(clock.instant()).thenReturn(Instant.parse("2024-06-22T17:04:00Z"));
         SensorService service = new SensorService(eventPublisher, 60, clock, true);
 
@@ -30,5 +30,42 @@ public class SensorServiceTest {
 
         /* should emit power off event */
         verify(eventPublisher).publishPowerEvent(false);
+    }
+    @Test
+    public void testPowerOffFalse() {
+        when(clock.instant()).thenReturn(Instant.parse("2024-06-22T17:04:00Z"));
+        SensorService service = new SensorService(eventPublisher, 60, clock, true);
+
+        /* assume 50 seconds passed */
+        when(clock.instant()).thenReturn(Instant.parse("2024-06-22T17:04:50Z"));
+        service.checkSensor();
+
+        /* should not emit power off event */
+        verifyNoInteractions(eventPublisher);
+    }
+    @Test
+    public void testPowerOnTrue() {
+        when(clock.instant()).thenReturn(Instant.parse("2024-06-22T17:04:00Z"));
+        SensorService service = new SensorService(eventPublisher, 60, clock, false);
+
+        /* assume 0 seconds passed */
+        when(clock.instant()).thenReturn(Instant.parse("2024-06-22T17:04:00Z"));
+        service.onSensorReport();
+
+        /* should emit power on event */
+        verify(eventPublisher).publishPowerEvent(true);
+    }
+
+    @Test
+    public void testPowerOnFalse() {
+        when(clock.instant()).thenReturn(Instant.parse("2024-06-22T17:04:00Z"));
+        SensorService service = new SensorService(eventPublisher, 60, clock, true);
+
+        /* assume 0 seconds passed */
+        when(clock.instant()).thenReturn(Instant.parse("2024-06-22T17:04:00Z"));
+        service.onSensorReport();
+
+        /* should not emit power on event */
+        verifyNoInteractions(eventPublisher);
     }
 }
