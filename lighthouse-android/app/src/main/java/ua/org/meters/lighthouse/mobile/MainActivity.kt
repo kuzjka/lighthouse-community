@@ -47,9 +47,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val intentPower = intent.getBooleanExtra("power", false)
-        val powerStatus: Flow<Boolean> = this.dataStore.data.map {
-            preferences -> preferences[POWER_KEY] ?: intentPower
+        val powerStatus: Flow<Boolean?> = this.dataStore.data.map {
+            preferences -> preferences[POWER_KEY]
         }
 
         val showPermissionRequest = askNotificationPermission()
@@ -60,7 +59,7 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
-                    val powerState = powerStatus.collectAsState(initial = intentPower)
+                    val powerState = powerStatus.collectAsState(initial = null)
                     AppScreen(
                         powerOn = powerState.value,
                         showPermissionRequest = showPermissionRequest,
@@ -130,13 +129,13 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppScreen(
-    powerOn: Boolean,
+    powerOn: Boolean?,
     showPermissionRequest: Boolean = false,
     onPermissionRequestJustification: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val imageRes = if (powerOn) R.drawable.lighthouse_on else R.drawable.lighthouse_off
-    val stringRes = if (powerOn) R.string.power_on else R.string.power_off
+    val imageRes = getLighthouseImageRes(powerOn)
+    val stringRes = getPowerStatusTextRes(powerOn)
     var showPermissionRequest by remember { mutableStateOf(showPermissionRequest) }
 
     Column(
@@ -204,6 +203,22 @@ fun RequestPermissionDialog(
         },
         modifier = modifier
     )
+}
+
+fun getLighthouseImageRes(powerOn: Boolean?): Int {
+    return when(powerOn) {
+        null -> R.drawable.lighthouse
+        true -> R.drawable.lighthouse_on
+        false -> R.drawable.lighthouse_off
+    }
+}
+
+fun getPowerStatusTextRes(powerOn: Boolean?): Int {
+    return when(powerOn) {
+        null -> R.string.power_unknown
+        true -> R.string.power_on
+        false -> R.string.power_off
+    }
 }
 
 @Preview(
